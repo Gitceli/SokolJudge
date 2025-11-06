@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sokol Judge - Connection Test</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .status {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+      font-weight: 500;
+    }
+    .success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    .loading {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 10px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .info {
+      background: #e7f3ff;
+      padding: 15px;
+      border-left: 4px solid #007bff;
+      margin: 20px 0;
+    }
+    code {
+      background: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🏆 Sokol Judge - Connection Test</h1>
+
+    <div class="info">
+      <strong>Current Location:</strong><br>
+      <code id="currentUrl"></code>
+    </div>
+
+    <div id="status" class="status loading">
+      Click "Test Connection" to check if the backend is reachable.
+    </div>
+
+    <button onclick="testBackend()">Test Backend Connection</button>
+    <button onclick="testWithCustomUrl()">Test Custom URL</button>
+    <button onclick="showNetworkInfo()">Show Network Info</button>
+
+    <div id="details" style="margin-top: 20px;"></div>
+  </div>
+
+  <script>
+    // Display current URL
+    document.getElementById('currentUrl').textContent = window.location.href;
+
+    // Get backend URL from localStorage or default
+    function getBackendUrl() {
+      // Try to read from localStorage (if app has run before)
+      const savedUrl = localStorage.getItem('backend_url');
+      if (savedUrl) return savedUrl;
+
+      // Default: assume backend is on same host as frontend, port 8000
+      const host = window.location.hostname;
+      return `http://${host}:8000`;
+    }
+
+    async function testBackend() {
+      const statusDiv = document.getElementById('status');
+      const detailsDiv = document.getElementById('details');
+
+      statusDiv.className = 'status loading';
+      statusDiv.textContent = 'Testing connection...';
+      detailsDiv.innerHTML = '';
+
+      const backendUrl = getBackendUrl();
+      const apiUrl = `${backendUrl}/api/`;
+
+      try {
+        // Test 1: Check if backend is reachable
+        statusDiv.textContent = 'Step 1/2: Checking backend server...';
+        const response = await fetch(`${backendUrl}/admin/`, {
+          method: 'GET',
+          mode: 'no-cors' // This allows us to test if server responds
+        });
+
+        // Test 2: Check API endpoint
+        statusDiv.textContent = 'Step 2/2: Checking API endpoint...';
+        const apiResponse = await fetch(`${apiUrl}contesters/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (apiResponse.ok || apiResponse.status === 401 || apiResponse.status === 403) {
+          // 401/403 means server is running, just requires auth
+          statusDiv.className = 'status success';
+          statusDiv.innerHTML = `
+            ✅ <strong>Connection Successful!</strong><br>
+            Backend is reachable at: <code>${backendUrl}</code>
+          `;
+
+          detailsDiv.innerHTML = `
+            <div class="info">
+              <strong>Configuration:</strong><br>
+              Backend URL: <code>${backendUrl}</code><br>
+              API Endpoint: <code>${apiUrl}</code><br>
+              Status: <code>${apiResponse.status}</code> ${apiResponse.statusText}<br>
+              <br>
+              <strong>Next steps:</strong><br>
+              ✓ Backend server is running<br>
+              ✓ API is accessible<br>
+              → You can now use the application at <a href="/">/</a>
+            </div>
+          `;
+        } else {
+          throw new Error(`API returned status ${apiResponse.status}`);
+        }
+
+      } catch (error) {
+        statusDiv.className = 'status error';
+        statusDiv.innerHTML = `
+          ❌ <strong>Connection Failed</strong><br>
+          Cannot reach backend at: <code>${backendUrl}</code>
+        `;
+
+        detailsDiv.innerHTML = `
+          <div class="error" style="margin: 20px 0;">
+            <strong>Error:</strong> ${error.message}
+          </div>
+          <div class="info">
+            <strong>Troubleshooting:</strong><br>
+            <ol>
+              <li>Is the Django backend running? Start it with:<br>
+                <code>python manage.py runserver 0.0.0.0:8000</code>
+              </li>
+              <li>Is the backend URL correct? Expected: <code>${backendUrl}</code></li>
+              <li>Check firewall settings - port 8000 must be open</li>
+              <li>Are you on the same network as the backend server?</li>
+            </ol>
+          </div>
+        `;
+      }
+    }
+
+    function testWithCustomUrl() {
+      const url = prompt('Enter backend URL (e.g., http://192.168.1.100:8000):', getBackendUrl());
+      if (url) {
+        localStorage.setItem('backend_url', url);
+        testBackend();
+      }
+    }
+
+    function showNetworkInfo() {
+      const detailsDiv = document.getElementById('details');
+      detailsDiv.innerHTML = `
+        <div class="info">
+          <strong>Network Information:</strong><br>
+          <br>
+          <strong>Current Page:</strong><br>
+          Protocol: <code>${window.location.protocol}</code><br>
+          Host: <code>${window.location.hostname}</code><br>
+          Port: <code>${window.location.port || 'default'}</code><br>
+          <br>
+          <strong>Expected Backend:</strong><br>
+          <code>${getBackendUrl()}</code><br>
+          <br>
+          <strong>How to find your IP address:</strong><br>
+          <strong>Windows:</strong> <code>ipconfig</code><br>
+          <strong>macOS:</strong> <code>ifconfig | grep "inet "</code><br>
+          <strong>Linux:</strong> <code>hostname -I</code><br>
+          <br>
+          <strong>LAN Setup:</strong><br>
+          See <a href="../LAN_SETUP.md" target="_blank">LAN_SETUP.md</a> for detailed instructions.
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
