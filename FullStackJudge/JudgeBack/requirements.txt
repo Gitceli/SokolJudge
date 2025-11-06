@@ -1,0 +1,51 @@
+# FullStack Judge Backend Requirements
+# Python 3.8+
+
+# Core Dependencies
+Django>=5.0
+djangorestframework>=3.15
+django-cors-headers>=4.0
+
+# Token authentication is built into DRF (rest_framework.authtoken).
+# Ensure 'rest_framework.authtoken' is in INSTALLED_APPS.
+
+# Installation Instructions:
+# 1. Create virtual environment (recommended):
+#    python -m venv venv
+#    source venv/bin/activate  # On Windows: venv\Scripts\activate
+#
+# 2. Install dependencies:
+#    pip install -r requirements.txt
+#
+# 3. Run migrations:
+#    python manage.py migrate
+#
+# 4. Create superuser:
+#    python manage.py createsuperuser
+#
+# 5. Run server (network access):
+#    python manage.py runserver 0.0.0.0:8000
+
+# Optional: Production Server (uncomment if deploying)
+# gunicorn>=20.1.0
+
+# Optional: PostgreSQL Database (uncomment if using PostgreSQL instead of SQLite)
+# psycopg2-binary>=2.9.0
+
+# Optional: MySQL Database (uncomment if using MySQL instead of SQLite)
+# mysqlclient>=2.1.0
+
+asgiref==3.8.1
+certifi==2025.4.26
+charset-normalizer==3.4.2
+Django==5.0.7
+django-cors-headers==4.4.0
+django-filter==24.1
+djangorestframework==3.15.2
+idna==3.10
+pillow==10.3.0
+psycopg2-binary==2.9.9
+python-dotenv==1.1.0
+requests==2.32.3
+sqlparse==0.5.3
+urllib3==2.4.0
