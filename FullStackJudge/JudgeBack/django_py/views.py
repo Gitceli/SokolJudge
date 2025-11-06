@@ -183,11 +183,23 @@ class JudgeRatingViewSet(mixins.ListModelMixin,
     def perform_create(self, serializer):
         judge = self.request.user.judge_profile
         contester = serializer.validated_data["contester"]
+        round_number = serializer.validated_data["round_number"]
 
         if not contester.active:
             raise serializers.ValidationError("You can score only the active contester.")
 
-        serializer.save(judge=judge)
+        # Use update_or_create to allow re-submission of ratings
+        # This allows judges to correct their scores if needed
+        JudgeRating.objects.update_or_create(
+            contester=contester,
+            judge=judge,
+            round_number=round_number,
+            defaults={
+                'score': serializer.validated_data.get('score', 0),
+                'landing_score': serializer.validated_data.get('landing_score', 0),
+                'deduction': serializer.validated_data.get('deduction', 0),
+            }
+        )
 
 
 class MeView(APIView):
@@ -225,4 +237,12 @@ class DifficultyScoreViewSet(mixins.ListModelMixin,
         if not contester.active:
             raise serializers.ValidationError("You can score only the active contester.")
 
-        serializer.save(judge=judge)
+        # Use update_or_create to allow re-submission of difficulty scores
+        # This allows difficulty judges to correct their scores if needed
+        DifficultyScore.objects.update_or_create(
+            contester=contester,
+            judge=judge,
+            defaults={
+                'difficulty': serializer.validated_data.get('difficulty', 0),
+            }
+        )

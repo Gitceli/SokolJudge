@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import axios from '../axios';
+import axios, { getErrorMessage } from '../axios';
 import Layout from '../components/Layout';
 
 export default function ActiveScoring() {
@@ -103,9 +103,14 @@ export default function ActiveScoring() {
       return;
     }
 
+    // Allow re-submission to correct scores
     if (submitted) {
-      setError('Ste že oddali ocene za tega tekmovalca.');
-      return;
+      const confirmResubmit = window.confirm(
+        'Ste že oddali ocene za tega tekmovalca. Ali želite posodobiti ocene?'
+      );
+      if (!confirmResubmit) {
+        return;
+      }
     }
 
     try {
@@ -144,8 +149,9 @@ export default function ActiveScoring() {
 
       await Promise.all(promises);
 
+      const wasAlreadySubmitted = submitted;
       setSubmitted(true);
-      setSuccess('Vse ocene so bile uspešno oddane!');
+      setSuccess(wasAlreadySubmitted ? 'Ocene so bile uspešno posodobljene!' : 'Vse ocene so bile uspešno oddane!');
 
       // Scroll to top to show success message
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -153,10 +159,9 @@ export default function ActiveScoring() {
     } catch (err) {
       console.error('Full error:', err);
       console.error('Error response:', err.response?.data);
-      const msg = err.response?.data?.detail ||
-                  err.response?.data?.non_field_errors ||
-                  JSON.stringify(err.response?.data) ||
-                  'Napaka pri oddaji ocen.';
+      // Check for field-specific errors first, then use general error handler
+      const msg = err.response?.data?.non_field_errors ||
+                  getErrorMessage(err);
       setError(Array.isArray(msg) ? msg.join(' ') : String(msg));
     } finally {
       setIsSubmitting(false);
